@@ -1,0 +1,9 @@
+{
+  "batch_id": "initial-001",
+  "items": [
+    {"sku": "TEA-001", "name": "Trà xanh Thái Nguyên 100g", "price": 45000, "currency": "VND", "version": 1},
+    {"sku": "TEA-002", "name": "Trà ô long Cầu Đất 100g", "price": 85000, "currency": "VND", "version": 1},
+    {"sku": "TEA-003", "name": "Trà sen Tây Hồ 50g", "price": 120000, "currency": "VND", "version": 1},
+    {"sku": "TEA-004", "name": "Hồng trà Lâm Đồng 100g", "price": 60000, "currency": "VND", "version": 1}
+  ]
+}

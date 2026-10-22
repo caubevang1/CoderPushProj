@@ -1,0 +1,10 @@
+{
+  "batch_id": "changes-003",
+  "items": [
+    {"sku": "CF-001", "name": "Cà phê Robusta Buôn Ma Thuột 250g", "price": 97000, "currency": "VND", "version": 2},
+    {"sku": "ACC-001", "name": "Phin nhôm pha cà phê", "price": 28000, "currency": "VND", "version": 3},
+    {"sku": "CF-005", "version": 3, "withdrawn": true},
+    {"sku": "ACC-003", "name": "Bình giữ nhiệt 500ml", "price": 180000, "currency": "VND", "version": 0},
+    {"sku": "ACC-004", "name": "Giấy lọc cà phê 100 tờ", "price": 35000, "currency": "VND", "version": 1}
+  ]
+}

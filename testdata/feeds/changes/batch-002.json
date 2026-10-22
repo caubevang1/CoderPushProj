@@ -1,0 +1,12 @@
+{
+  "batch_id": "changes-002",
+  "items": [
+    {"sku": "TEA-002", "name": "Trà ô long Cầu Đất 100g", "price": 85000, "currency": "VND", "version": 1},
+    {"sku": "TEA-001", "name": "Trà xanh Thái Nguyên 100g", "price": 42000, "currency": "VND", "version": 2},
+    {"sku": "CF-005", "name": "Cà phê Arabica Sơn La 250g", "price": 140000, "currency": "VND", "version": 1},
+    {"sku": "CF-003", "name": "Cà phê Culi 250g", "price": 110000, "currency": "VND", "version": 1},
+    {"sku": "CF-002", "name": "Cà phê Arabica Cầu Đất 250g", "price": 150000, "currency": "VND", "version": 2},
+    {"sku": "TEA-006", "name": "", "price": 70000, "currency": "VND", "version": 1},
+    {"sku": "CF-006", "name": "Cà phê Excelsa 250g", "price": -1000, "currency": "VND", "version": 1}
+  ]
+}

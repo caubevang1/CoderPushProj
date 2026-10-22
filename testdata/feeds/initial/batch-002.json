@@ -1,0 +1,8 @@
+{
+  "batch_id": "initial-002",
+  "items": [
+    {"sku": "CF-001", "name": "Cà phê Robusta Buôn Ma Thuột 250g", "price": 95000, "currency": "VND", "version": 1},
+    {"sku": "CF-002", "name": "Cà phê Arabica Cầu Đất 250g", "price": 150000, "currency": "VND", "version": 1},
+    {"sku": "CF-003", "name": "Cà phê Culi 250g", "price": 110000, "currency": "VND", "version": 1}
+  ]
+}

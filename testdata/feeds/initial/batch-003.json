@@ -1,0 +1,8 @@
+{
+  "batch_id": "initial-003",
+  "items": [
+    {"sku": "CF-004", "name": "Cà phê Moka 250g", "price": 165000, "currency": "VND", "version": 1},
+    {"sku": "ACC-001", "name": "Phin nhôm pha cà phê", "price": 25000, "currency": "VND", "version": 1},
+    {"sku": "ACC-002", "name": "Ấm pha trà gốm Bát Tràng", "price": 350000, "currency": "VND", "version": 1}
+  ]
+}
