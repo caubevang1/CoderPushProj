@@ -1,0 +1,26 @@
+{{define "content"}}
+<h1>Updates</h1>
+<section class="card">
+{{if .}}
+  <div class="table"><table>
+    <tr><th>Update</th><th>Status</th><th>Started</th><th>Finished</th><th>Batches</th><th>Changes</th><th>Stale</th><th>Duplicate</th><th>Problems</th></tr>
+    {{range .}}
+    <tr>
+      <td><a href="/runs/{{.Run.ID}}">#{{.Run.ID}}</a></td>
+      <td><span class="badge {{.Status}}">{{.Status}}</span></td>
+      <td>{{time .Run.StartedAt}}</td>
+      <td>{{timeOrDash .Run.FinishedAt}}</td>
+      <td>{{.Run.BatchesApplied}}</td>
+      <td>{{count .Changes "created"}} created, {{count .Changes "updated"}} updated,
+        {{count .Changes "withdrawn"}} withdrawn, {{count .Changes "reactivated"}} reactivated</td>
+      <td>{{.Run.SkippedStale}}</td>
+      <td>{{.Run.SkippedDuplicate}}</td>
+      <td>{{.Problems}}</td>
+    </tr>
+    {{end}}
+  </table></div>
+{{else}}
+  <p class="muted">No updates yet. Start one from the <a href="/">dashboard</a>.</p>
+{{end}}
+</section>
+{{end}}

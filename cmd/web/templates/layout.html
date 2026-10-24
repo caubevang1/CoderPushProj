@@ -1,0 +1,98 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{{if .Refresh}}<meta http-equiv="refresh" content="2">{{end}}
+<title>{{.Title}} · Supplier catalog</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #fff; --text: #1d2330; --muted: #5b6474; --line: #dfe3ea;
+  --accent: #2557d6; --ok: #1a7f45; --warn: #a15c00; --bad: #b42318; --code: #eef1f5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --card: #1b2029; --text: #e6e9ef; --muted: #9aa3b2; --line: #2c3340;
+    --accent: #7aa2ff; --ok: #4cc38a; --warn: #f0a64a; --bad: #ff7b72; --code: #232a35;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { background: var(--card); border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; flex-wrap: wrap; gap: 4px 20px; align-items: center; padding-top: 12px; padding-bottom: 12px; }
+header strong { margin-right: 12px; }
+header a { color: var(--muted); text-decoration: none; }
+header a:hover { color: var(--accent); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+main { padding: 20px 0 48px; }
+h1 { font-size: 22px; margin: 0 0 16px; }
+h2 { font-size: 16px; margin: 0 0 12px; }
+a { color: var(--accent); }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.grid .card { margin-bottom: 0; }
+.msg { background: var(--card); border-left: 4px solid var(--accent); padding: 10px 14px; margin-bottom: 16px; border-radius: 4px; }
+.muted { color: var(--muted); }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid currentColor; }
+.FINISHED, .completed { color: var(--ok); }
+.IN.PROGRESS, .running { color: var(--accent); }
+.NOT.FINISHED, .failed, .interrupted, .completed_with_problems { color: var(--warn); }
+.withdrawn { color: var(--muted); }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+dt { color: var(--muted); }
+dd { margin: 0; }
+form { margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+label { display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
+select, button { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+button { cursor: pointer; background: var(--accent); border-color: var(--accent); color: #fff; }
+button.secondary { background: var(--card); color: var(--text); border-color: var(--line); }
+button.danger { background: var(--card); color: var(--bad); border-color: var(--bad); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.table { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+pre { background: var(--code); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 13px; margin: 0; max-height: 320px; }
+code { background: var(--code); padding: 0 4px; border-radius: 4px; }
+ol { margin: 0; padding-left: 20px; }
+ol li { margin-bottom: 8px; }
+.filters a { margin-right: 12px; }
+.filters a.on { font-weight: 700; color: var(--text); text-decoration: none; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <strong>Supplier catalog</strong>
+  <a href="/">Dashboard</a>
+  <a href="/runs">Updates</a>
+  <a href="/products">Catalog</a>
+  <a href="/problems">Problems</a>
+</div></header>
+<main><div class="wrap">
+{{if .Msg}}<div class="msg">{{.Msg}}</div>{{end}}
+{{template "content" .D}}
+</div></main>
+</body>
+</html>{{end}}
+
+{{define "summary"}}
+<p><strong>Update #{{.Run.ID}}</strong>
+  <span class="badge {{.Status}}">{{.Status}}</span>
+  <span class="badge {{.Verdict}}">{{.Verdict}}</span></p>
+<dl>
+  <dt>Started</dt><dd>{{time .Run.StartedAt}}</dd>
+  <dt>Last update</dt><dd>{{time .Run.UpdatedAt}}</dd>
+  <dt>Finished</dt><dd>{{timeOrDash .Run.FinishedAt}}</dd>
+  <dt>Applied</dt><dd>{{plural .Run.BatchesApplied "batch" "batches"}}</dd>
+  <dt>Changes</dt><dd>{{count .Changes "created"}} created, {{count .Changes "updated"}} updated,
+    {{count .Changes "withdrawn"}} withdrawn, {{count .Changes "reactivated"}} reactivated</dd>
+  <dt>Skipped</dt><dd>{{.Run.SkippedStale}} stale, {{.Run.SkippedDuplicate}} duplicate</dd>
+  <dt>Problems</dt><dd>{{plural .Problems "invalid record" "invalid records"}} ({{.OpenProblems}} unresolved)</dd>
+  {{if .Run.LastError}}<dt>Last error</dt><dd>{{.Run.LastError}}</dd>{{end}}
+</dl>
+{{if and (not .Run.Status.Finished) (not .Live)}}
+<p class="muted">The catalog keeps every batch applied so far. Press <strong>Resume</strong> on the dashboard to continue.</p>
+{{end}}
+{{end}}

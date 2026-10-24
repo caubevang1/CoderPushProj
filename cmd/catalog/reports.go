@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"text/tabwriter"
 
 	"CoderPush/internal/catalog"
+	"CoderPush/internal/report"
 	"CoderPush/internal/store"
 )
 
@@ -48,7 +48,7 @@ func (a *app) changes(args []string) error {
 		tw := tabwriter.NewWriter(a.out, 0, 0, 2, ' ', 0)
 		fmt.Fprintln(tw, "BATCH\tSKU\tCHANGE\tVERSION\tDETAILS")
 		for _, c := range changes {
-			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", c.BatchID, c.SKU, c.Kind, versions(c), details(c))
+			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", c.BatchID, c.SKU, c.Kind, report.Versions(c), report.Details(c))
 		}
 		return tw.Flush()
 	})
@@ -59,51 +59,6 @@ func kindSuffix(kind string) string {
 		return ""
 	}
 	return " of kind " + kind
-}
-
-func versions(c store.Change) string {
-	if c.OldVersion == nil {
-		return "v" + strconv.FormatInt(c.NewVersion, 10)
-	}
-	return fmt.Sprintf("v%d → v%d", *c.OldVersion, c.NewVersion)
-}
-
-// details describes a change in words staff can check quickly.
-func details(c store.Change) string {
-	n, o := c.New, c.Old
-	switch {
-	case n == nil:
-		return ""
-	case c.Kind == store.ChangeWithdrawn && o == nil:
-		return "withdrawn before it was ever listed"
-	case c.Kind == store.ChangeWithdrawn:
-		return "no longer for sale"
-	case o == nil || c.Kind == store.ChangeReactivated:
-		return fmt.Sprintf("%s, %s", n.Name, money(n.Price, n.Currency))
-	}
-
-	var diffs []string
-	if o.Name != n.Name {
-		diffs = append(diffs, fmt.Sprintf("name %q → %q", o.Name, n.Name))
-	}
-	if o.Price != n.Price || o.Currency != n.Currency {
-		diffs = append(diffs, fmt.Sprintf("price %s → %s", money(o.Price, o.Currency), money(n.Price, n.Currency)))
-	}
-	return strings.Join(diffs, "; ")
-}
-
-// money formats an amount in the currency's smallest unit, e.g. 45,000 VND.
-func money(amount int64, currency string) string {
-	s := strconv.FormatInt(amount, 10)
-	neg := strings.HasPrefix(s, "-")
-	s = strings.TrimPrefix(s, "-")
-	for i := len(s) - 3; i > 0; i -= 3 {
-		s = s[:i] + "," + s[i:]
-	}
-	if neg {
-		s = "-" + s
-	}
-	return strings.TrimSpace(s + " " + currency)
 }
 
 func (a *app) problems(args []string) error {
@@ -124,7 +79,7 @@ func (a *app) problems(args []string) error {
 		switch {
 		case err == nil:
 			nothing = false
-			status, live, err := a.effectiveStatus(ctx, run)
+			status, live, err := a.store.EffectiveStatus(ctx, run)
 			if err != nil {
 				return err
 			}
@@ -229,7 +184,7 @@ func (a *app) products(args []string) error {
 		tw := tabwriter.NewWriter(a.out, 0, 0, 2, ' ', 0)
 		fmt.Fprintln(tw, "SKU\tNAME\tPRICE\tSTATUS\tVERSION\tLAST RUN")
 		for _, p := range products {
-			price := money(p.Price, p.Currency)
+			price := report.Money(p.Price, p.Currency)
 			if p.Name == "" && p.Status == catalog.StatusWithdrawn {
 				price = "-" // tombstone of a product never listed
 			}

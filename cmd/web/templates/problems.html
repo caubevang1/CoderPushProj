@@ -1,0 +1,38 @@
+{{define "content"}}
+<h1>What needs attention</h1>
+
+{{with .Open}}
+<section class="card">
+  <h2>Unfinished update</h2>
+  {{template "summary" .}}
+</section>
+{{end}}
+
+<section class="card">
+  <h2>Records that could not be applied</h2>
+  <p class="filters">
+    <a href="/problems" {{if not .All}}class="on"{{end}}>unresolved</a>
+    <a href="/problems?all=1" {{if .All}}class="on"{{end}}>all</a>
+  </p>
+  {{if .Problems}}
+  <div class="table"><table>
+    <tr><th>ID</th><th>Update</th><th>Batch</th><th>SKU</th><th>Reason</th><th>Record</th><th>Resolved</th></tr>
+    {{range .Problems}}
+    <tr>
+      <td>{{.ID}}</td>
+      <td><a href="/runs/{{.RunID}}">#{{.RunID}}</a></td>
+      <td>{{.BatchID}}</td>
+      <td>{{if .SKU}}{{.SKU}}{{else}}-{{end}}</td>
+      <td>{{.Reason}}</td>
+      <td><code>{{.RawItem}}</code></td>
+      <td>{{if .ResolvedAt}}{{timeOrDash .ResolvedAt}}{{else}}
+        <form method="post" action="/problems/{{.ID}}/resolve"><button class="secondary">Mark resolved</button></form>{{end}}</td>
+    </tr>
+    {{end}}
+  </table></div>
+  <p class="muted">Fix the record at the supplier, then mark it resolved.</p>
+  {{else}}
+  <p class="muted">{{if .Open}}No invalid records.{{else}}Nothing needs attention.{{end}}</p>
+  {{end}}
+</section>
+{{end}}

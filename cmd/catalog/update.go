@@ -128,29 +128,13 @@ func (a *app) runOrLatest(ctx context.Context, id int64) (int64, error) {
 	return run.ID, err
 }
 
-// effectiveStatus tells a live "running" run from one whose process died:
-// the latter has no process holding the import lock.
-func (a *app) effectiveStatus(ctx context.Context, run store.Run) (status string, live bool, err error) {
-	if run.Status != store.RunRunning {
-		return string(run.Status), false, nil
-	}
-	free, err := a.store.IsImportLockFree(ctx)
-	if err != nil {
-		return "", false, err
-	}
-	if free {
-		return string(store.RunInterrupted), false, nil
-	}
-	return string(store.RunRunning), true, nil
-}
-
 func (a *app) printStatus(ctx context.Context, id int64) error {
 	sum, err := a.store.RunSummary(ctx, id)
 	if err != nil {
 		return err
 	}
 	run := sum.Run
-	status, live, err := a.effectiveStatus(ctx, run)
+	status, live, err := a.store.EffectiveStatus(ctx, run)
 	if err != nil {
 		return err
 	}
@@ -216,7 +200,7 @@ func (a *app) updateList(args []string) error {
 		tw := tabwriter.NewWriter(a.out, 0, 0, 2, ' ', 0)
 		fmt.Fprintln(tw, "RUN\tSTATUS\tSTARTED\tFINISHED\tBATCHES\tSTALE\tDUPLICATE")
 		for _, r := range runs {
-			status, _, err := a.effectiveStatus(ctx, r)
+			status, _, err := a.store.EffectiveStatus(ctx, r)
 			if err != nil {
 				return err
 			}

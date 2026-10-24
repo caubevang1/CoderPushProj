@@ -1,0 +1,25 @@
+{{define "content"}}
+<h1>Update #{{.Run.Run.ID}}</h1>
+<section class="card">
+  {{template "summary" .Run}}
+</section>
+
+<section class="card">
+  <h2>Changes</h2>
+  <p class="filters">
+    <a href="/runs/{{.Run.Run.ID}}" {{if not .Kind}}class="on"{{end}}>all</a>
+    {{range .Kinds}}<a href="/runs/{{$.Run.Run.ID}}?kind={{.}}" {{if eq (print .) $.Kind}}class="on"{{end}}>{{.}}</a>{{end}}
+  </p>
+  {{if .Changes}}
+  <div class="table"><table>
+    <tr><th>Batch</th><th>SKU</th><th>Change</th><th>Version</th><th>Details</th></tr>
+    {{range .Changes}}
+    <tr><td>{{.BatchID}}</td><td>{{.SKU}}</td><td>{{.Kind}}</td><td>{{versions .}}</td><td>{{details .}}</td></tr>
+    {{end}}
+  </table></div>
+  {{else}}
+  <p class="muted">No changes{{if .Kind}} of kind {{.Kind}}{{end}}.
+    Records older than or equal to what the catalog has are skipped and only counted above.</p>
+  {{end}}
+</section>
+{{end}}

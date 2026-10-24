@@ -1,0 +1,28 @@
+{{define "content"}}
+<h1>Catalog</h1>
+<section class="card">
+  <p class="filters">
+    <a href="/products" {{if not .Status}}class="on"{{end}}>all</a>
+    <a href="/products?status=active" {{if eq .Status "active"}}class="on"{{end}}>active</a>
+    <a href="/products?status=withdrawn" {{if eq .Status "withdrawn"}}class="on"{{end}}>withdrawn</a>
+  </p>
+  {{if .Products}}
+  <div class="table"><table>
+    <tr><th>SKU</th><th>Name</th><th>Price</th><th>Status</th><th>Version</th><th>Last update</th></tr>
+    {{range .Products}}
+    <tr>
+      <td>{{.SKU}}</td>
+      <td>{{if .Name}}{{.Name}}{{else}}-{{end}}</td>
+      <td>{{if .Name}}{{money .Price .Currency}}{{else}}-{{end}}</td>
+      <td><span class="{{.Status}}">{{.Status}}</span></td>
+      <td>{{.Version}}</td>
+      <td>{{if .LastRunID}}<a href="/runs/{{.LastRunID}}">#{{.LastRunID}}</a>{{else}}-{{end}}</td>
+    </tr>
+    {{end}}
+  </table></div>
+  <p class="muted">Withdrawn products are kept as tombstones: their version stops older records from bringing them back.</p>
+  {{else}}
+  <p class="muted">No products. Run an update from the <a href="/">dashboard</a>.</p>
+  {{end}}
+</section>
+{{end}}

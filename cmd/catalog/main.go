@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"CoderPush/internal/importer"
+	"CoderPush/internal/report"
 	"CoderPush/internal/store"
 )
 
@@ -145,8 +146,5 @@ func env(key, def string) string {
 }
 
 func plural(n int, one, many string) string {
-	if n == 1 {
-		return "1 " + one
-	}
-	return fmt.Sprintf("%d %s", n, many)
+	return report.Plural(n, one, many)
 }

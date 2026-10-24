@@ -179,6 +179,23 @@ func (s *Store) SetStatus(ctx context.Context, id int64, status RunStatus, lastE
 	return wrap("set status: commit", tx.Commit())
 }
 
+// EffectiveStatus tells a live "running" run from one whose process died:
+// the latter has no process holding the import lock, so it is reported as
+// interrupted. live is true only while some process is importing it.
+func (s *Store) EffectiveStatus(ctx context.Context, run Run) (status RunStatus, live bool, err error) {
+	if run.Status != RunRunning {
+		return run.Status, false, nil
+	}
+	free, err := s.IsImportLockFree(ctx)
+	if err != nil {
+		return "", false, err
+	}
+	if free {
+		return RunInterrupted, false, nil
+	}
+	return RunRunning, true, nil
+}
+
 // MarkStaleRunsInterrupted turns every "running" run into "interrupted".
 // Call it only while holding the import lock: then no live process owns
 // those runs, so they belong to a process that died.

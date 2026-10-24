@@ -1,0 +1,121 @@
+{{define "content"}}
+<h1>Catalog updates</h1>
+
+<div class="grid">
+  <section class="card">
+    <h2>Latest update</h2>
+    {{with .Latest}}
+      {{template "summary" .}}
+      <p><a href="/runs/{{.Run.ID}}">What did it change?</a></p>
+    {{else}}
+      <p class="muted">No updates yet. Press <strong>Start update</strong>.</p>
+    {{end}}
+    {{if .Result}}<p><strong>Last result:</strong> {{.Result}}</p>{{end}}
+  </section>
+
+  <section class="card">
+    <h2>Run an update</h2>
+    <form method="post" action="/update/start" class="row">
+      <label>Simulate a crash
+        <select name="crash_after">
+          <option value="0">no crash</option>
+          <option value="1">after batch 1</option>
+          <option value="2">after batch 2</option>
+        </select>
+      </label>
+      <button {{if .Importing}}disabled{{end}}>Start update</button>
+    </form>
+    <p></p>
+    <div class="row">
+      <form method="post" action="/update/resume">
+        <button class="secondary" {{if not .CanResume}}disabled{{end}}>Resume</button>
+      </form>
+      {{if .Importing}}
+      <form method="post" action="/update/stop">
+        <button class="danger" title="Like Ctrl+C in the CLI: stop after the current batch">Stop</button>
+      </form>
+      {{end}}
+    </div>
+    <p class="muted">
+      {{if .Importing}}An update is running; this page refreshes every 2 seconds.
+      {{else if .CanResume}}An update is unfinished: Start is refused until it is resumed.
+      {{else}}No update is open.{{end}}
+    </p>
+    <p>Catalog: <a href="/products?status=active">{{.Active}} active</a>,
+      <a href="/products?status=withdrawn">{{.Withdrawn}} withdrawn</a> ·
+      <a href="/problems">{{.OpenProblems}} open problems</a></p>
+  </section>
+
+  <section class="card">
+    <h2>Fake supplier</h2>
+    <form method="post" action="/supplier">
+      <div class="row">
+        <label>Feed
+          <select name="feed">
+            {{range .Feeds}}<option {{if eq . $.Scenario.Feed}}selected{{end}}>{{.}}</option>{{end}}
+          </select>
+        </label>
+        <label>Outage (HTTP 503)
+          <select name="fail_at">
+            <option value="0" {{if eq .Scenario.FailAt 0}}selected{{end}}>none</option>
+            <option value="1" {{if eq .Scenario.FailAt 1}}selected{{end}}>at batch 1</option>
+            <option value="2" {{if eq .Scenario.FailAt 2}}selected{{end}}>at batch 2</option>
+            <option value="3" {{if eq .Scenario.FailAt 3}}selected{{end}}>at batch 3</option>
+          </select>
+        </label>
+        <label>Outage lasts
+          <select name="fail_times">
+            <option value="0" {{if eq .Scenario.FailTimes 0}}selected{{end}}>until changed</option>
+            <option value="2" {{if eq .Scenario.FailTimes 2}}selected{{end}}>2 requests</option>
+          </select>
+        </label>
+        <label>Delay per batch
+          <select name="delay">
+            <option value="0" {{if eq (seconds .Scenario.Delay) 0}}selected{{end}}>none</option>
+            <option value="1" {{if eq (seconds .Scenario.Delay) 1}}selected{{end}}>1 s</option>
+            <option value="3" {{if eq (seconds .Scenario.Delay) 3}}selected{{end}}>3 s</option>
+          </select>
+        </label>
+        <button class="secondary">Save</button>
+      </div>
+    </form>
+    <p class="muted">The supplier sends the feed's batch files one by one.
+      <code>initial</code>: 3 batches, 10 new products.
+      <code>changes</code>: 3 batches with updates, withdrawals, duplicates, out-of-order and invalid records.
+      Settings return to these defaults when the server restarts.</p>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Try it</h2>
+  <ol>
+    <li><strong>First update.</strong> Supplier feed <code>initial</code>, no outage. Press <em>Start update</em>:
+      completed, 10 products created.</li>
+    <li><strong>The supplier goes down mid-update.</strong> Feed <code>changes</code>, outage <em>at batch 3</em>, Save, Start update.
+      After about 15 s of retries the update is <em>failed</em> and <em>NOT FINISHED</em>: batches 1–2 stay applied,
+      nothing is lost. Start update again is refused.</li>
+    <li><strong>The supplier is back.</strong> Outage <em>none</em>, Save, press <em>Resume</em>: only batch 3 is fetched,
+      then <em>completed_with_problems</em>. Open the update to see each change (old → new), stale and duplicate
+      records skipped, and <a href="/problems">Problems</a> for the invalid records.</li>
+    <li><strong>Import the same data again.</strong> Start update: completed with 0 changes, no duplicate products.</li>
+    <li><strong>The application crashes.</strong> Feed <code>initial</code>, then Start update with
+      <em>crash after batch 1</em>. The server process really exits; the host restarts it (a few seconds, up to a
+      minute on a free plan). Reload: the update shows <em>interrupted</em>. Press <em>Resume</em> to finish it.</li>
+  </ol>
+  <p class="muted">The same scenarios run from the command line, see the README.</p>
+</section>
+
+<section class="card">
+  <h2>Importer log</h2>
+  {{if .Log}}<pre>{{range .Log}}{{.}}
+{{end}}</pre>{{else}}<p class="muted">Nothing yet. The log is kept in memory and cleared when the server restarts.</p>{{end}}
+</section>
+
+<section class="card">
+  <h2>Start over</h2>
+  <form method="post" action="/reset" class="row" onsubmit="return confirm('Delete the whole catalog and every update?')">
+    <button class="danger" {{if .Importing}}disabled{{end}}>Reset demo data</button>
+    <span class="muted">Deletes the catalog and all updates, so the scenarios above can be replayed from step 1.</span>
+  </form>
+</section>
+{{end}}

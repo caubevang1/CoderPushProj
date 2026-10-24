@@ -3,6 +3,8 @@ package store
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	_ "embed"
 	"errors"
@@ -75,6 +77,32 @@ func (s *Store) Migrate(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// tables lists every table, children before parents.
+var tables = []string{"changes", "problems", "applied_batches", "products", "import_runs"}
+
+// DeleteAll empties every table: the catalog and its whole history. It is
+// meant for tests and for resetting the web demo, never for staff.
+func (s *Store) DeleteAll(ctx context.Context) error {
+	// DELETE in child-to-parent order: much faster than TRUNCATE (DDL) on
+	// tiny tables, and foreign keys stay enforced.
+	for _, table := range tables {
+		if _, err := s.db.ExecContext(ctx, "DELETE FROM "+table); err != nil {
+			return wrap("empty "+table, err)
+		}
+	}
+	return nil
+}
+
+// RegisterCA lets DSNs use tls=name to connect over TLS to a server whose
+// certificate is signed by the PEM-encoded CA, as hosted MySQL (Aiven) needs.
+func RegisterCA(name string, caPEM []byte) error {
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(caPEM) {
+		return errors.New("register CA: no certificate found in PEM data")
+	}
+	return mysql.RegisterTLSConfig(name, &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12})
 }
 
 // isBlankSQL reports whether stmt holds only whitespace and -- comments.
