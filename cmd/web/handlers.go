@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"CoderPush/internal/catalog"
+	"CoderPush/internal/importer"
 	"CoderPush/internal/store"
 )
 
@@ -136,6 +137,21 @@ func (s *server) postUpdate(mode string) http.HandlerFunc {
 			redirect(w, r, "/", err.Error())
 			return
 		}
+		// Refuse at once what the importer would refuse anyway, instead of
+		// answering "started" when the database is slow to reply. The
+		// importer still checks again under the import lock.
+		open, err := s.store.OpenRun(r.Context())
+		switch {
+		case err != nil && !errors.Is(err, store.ErrNoOpenRun):
+			s.fail(w, err)
+			return
+		case mode == "start" && err == nil:
+			redirect(w, r, "/", explain(fmt.Errorf("%w: run #%d is %s", store.ErrRunAlreadyOpen, open.ID, open.Status)))
+			return
+		case mode == "resume" && err != nil:
+			redirect(w, r, "/", explain(importer.ErrNothingToResume))
+			return
+		}
 		if err := s.startImport(mode, crashAfter); err != nil {
 			redirect(w, r, "/", err.Error())
 			return
@@ -195,16 +211,22 @@ func (s *server) runs(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, err)
 		return
 	}
-	views := make([]runView, 0, len(runs))
+	// One query for the list: change counts are on each run's own page.
+	rows := make([]runRow, 0, len(runs))
 	for _, run := range runs {
-		v, err := s.runView(ctx, run.ID)
+		status, _, err := s.store.EffectiveStatus(ctx, run) // queries only for a "running" run
 		if err != nil {
 			s.fail(w, err)
 			return
 		}
-		views = append(views, v)
+		rows = append(rows, runRow{Run: run, Status: status})
 	}
-	s.render(w, "runs", view{Title: "Updates", D: views})
+	s.render(w, "runs", view{Title: "Updates", D: rows})
+}
+
+type runRow struct {
+	Run    store.Run
+	Status store.RunStatus
 }
 
 type runDetailData struct {

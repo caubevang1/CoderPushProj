@@ -97,7 +97,8 @@
     <li><strong>The supplier is back.</strong> Outage <em>none</em>, Save, press <em>Resume</em>: only batch 3 is fetched,
       then <em>completed_with_problems</em>. Open the update to see each change (old → new), stale and duplicate
       records skipped, and <a href="/problems">Problems</a> for the invalid records.</li>
-    <li><strong>Import the same data again.</strong> Start update: completed with 0 changes, no duplicate products.</li>
+    <li><strong>Import the same data again.</strong> Start update: 0 changes, no duplicate products. The status is
+      still <em>completed_with_problems</em> because the feed's invalid records are reported again.</li>
     <li><strong>The application crashes.</strong> Feed <code>initial</code>, then Start update with
       <em>crash after batch 1</em>. The server process really exits; the host restarts it (a few seconds, up to a
       minute on a free plan). Reload: the update shows <em>interrupted</em>. Press <em>Resume</em> to finish it.</li>

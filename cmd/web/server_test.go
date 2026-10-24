@@ -143,6 +143,9 @@ func TestFirstUpdateThenSameDataAgain(t *testing.T) {
 		t.Fatalf("same data again: status %s, changes %v", sum.Run.Status, sum.Changes)
 	}
 	mustContain(t, "run page", a.get(fmt.Sprintf("/runs/%d", sum.Run.ID)), "No changes")
+	if n := strings.Count(a.get("/runs"), `badge completed"`); n != 2 {
+		t.Errorf("runs page shows %d completed updates, want 2", n)
+	}
 }
 
 func TestSupplierOutageThenResume(t *testing.T) {

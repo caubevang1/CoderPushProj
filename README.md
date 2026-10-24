@@ -11,7 +11,7 @@ Written in Go 1.27 with MySQL 8 (Docker). A fake supplier is included.
 Staff use a CLI; a small web version of the same features is deployed for
 review.
 
-**Live demo:** <URL> (see [Live demo](#live-demo))
+**Live demo:** https://supplier-catalog.onrender.com/ (see [Live demo](#live-demo))
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -95,7 +95,7 @@ The fake supplier (`go run ./cmd/fakesupplier`) accepts:
 
 ## Live demo
 
-<URL>
+https://supplier-catalog.onrender.com/
 
 The web demo (`cmd/web`) runs the same importer and database code as the
 CLI, with the fake supplier built in, so every scenario can be tried from a
@@ -105,7 +105,8 @@ browser. The dashboard lists the steps under **Try it**:
 2. The supplier goes down at batch 3: the update is `failed` and
    *not finished*, batches 1–2 stay applied, and a new update is refused.
 3. The supplier is back: **Resume** fetches only batch 3.
-4. The same data again: 0 changes, no duplicates.
+4. The same data again: 0 changes, no duplicates (still
+   `completed_with_problems`: the feed's invalid records are reported again).
 5. A real crash: with *crash after batch 1* the server process exits; the
    host restarts it and the update shows `interrupted` until resumed.
 
