@@ -8,11 +8,15 @@ needs attention, and resume an update that stopped half-way, without ever
 losing or corrupting the existing catalog.
 
 Written in Go 1.27 with MySQL 8 (Docker). A fake supplier is included.
+Staff use a CLI; a small web version of the same features is deployed for
+review.
+
+**Live demo:** <URL> (see [Live demo](#live-demo))
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
 - [CLI commands](#cli-commands)
-- [Demo video](#demo-video)
+- [Live demo](#live-demo)
 - [Failure scenarios demo](#failure-scenarios-demo)
 - [Design](#design)
 - [Assumptions](#assumptions)
@@ -89,13 +93,61 @@ The fake supplier (`go run ./cmd/fakesupplier`) accepts:
 | `-fail-rate P` | `0` | Probability of a random `503` on any request |
 | `-delay D` | `0` | Wait before each answer (e.g. `2s`), handy to press Ctrl+C mid-update |
 
-## Demo video
+## Live demo
 
-Video (3–5 min): <link>
+<URL>
 
-The video follows the failure scenarios below: a first update, the
-supplier going down mid-update, resuming, importing the same data again,
-and recovering from a crash.
+The web demo (`cmd/web`) runs the same importer and database code as the
+CLI, with the fake supplier built in, so every scenario can be tried from a
+browser. The dashboard lists the steps under **Try it**:
+
+1. A first update: 10 products created.
+2. The supplier goes down at batch 3: the update is `failed` and
+   *not finished*, batches 1–2 stay applied, and a new update is refused.
+3. The supplier is back: **Resume** fetches only batch 3.
+4. The same data again: 0 changes, no duplicates.
+5. A real crash: with *crash after batch 1* the server process exits; the
+   host restarts it and the update shows `interrupted` until resumed.
+
+**Reset demo data** empties the database so the steps can be replayed.
+
+It is hosted on Render's free plan with a free MySQL 8 on Aiven. After 15
+minutes without visitors the service sleeps, and the first page then takes
+up to a minute to load.
+
+### Run the web demo locally
+
+```sh
+docker compose up -d
+go run ./cmd/web            # http://localhost:8080, uses CATALOG_DSN like the CLI
+```
+
+Or as the deployed image:
+
+```sh
+docker build -t supplier-catalog-web .
+docker run --rm -p 8080:8080 \
+  -e CATALOG_DSN='admin:admin@tcp(host.docker.internal:3307)/coderpush_db?parseTime=true&loc=UTC&charset=utf8mb4' \
+  supplier-catalog-web
+```
+
+The tables are created at start-up. Environment variables: `PORT`
+(default `8080`), `CATALOG_DSN`, `CATALOG_DB_CA` (see below) and
+`FEEDS_DIR` (default `testdata/feeds`).
+
+### Deploy it
+
+1. Create a free MySQL service on [Aiven](https://aiven.io/). From its
+   overview page, note the host, port, user and password, and download the
+   CA certificate.
+2. On [Render](https://render.com/), create a **Blueprint** from this
+   repository; `render.yaml` describes the service. Set:
+   - `CATALOG_DSN` = `USER:PASSWORD@tcp(HOST:PORT)/defaultdb?parseTime=true&loc=UTC&charset=utf8mb4&tls=custom`
+   - `CATALOG_DB_CA` = the content of the CA certificate (`-----BEGIN CERTIFICATE-----` ...)
+
+   `tls=custom` makes the connection use that CA.
+3. Render builds the `Dockerfile` and restarts the service when it exits,
+   which is what the crash scenario relies on.
 
 ## Failure scenarios demo
 
@@ -331,6 +383,8 @@ What is covered:
 | Retry, no retry on 400, giving up, unsafe answers | `internal/supplier` |
 | Stale records, tombstones, reactivation, repeated batch, case-sensitive SKUs, transaction checks | `internal/store` |
 | First import, re-import, reverse batch order, supplier down at batch 1 or 3 then resume, Ctrl+C then resume, dead process detected, one run at a time, invalid records | `internal/importer` |
+| Web demo: first update and re-import, outage then resume, crash then resume, stop, reset, bad input | `cmd/web` |
+| How changes and prices are shown | `internal/report` |
 
 ## Use of AI tools
 
@@ -338,12 +392,15 @@ What is covered:
   decision table) were written by hand.
 - Claude Code (Anthropic) helped plan the work and write the rest, phase
   by phase: the MySQL store, the importer, the supplier client and fake
-  supplier, the CLI, the tests and this README.
+  supplier, the CLI, the web demo and its deployment files, the tests and
+  this README.
 - The design decisions were mine. I reviewed, ran and tested every change.
 
 ## Not done yet / next steps
 
-- No web interface: staff use the CLI.
+- The web demo has no login: anyone with its URL can press every button,
+  including Reset. A staff web app would need authentication and should
+  run imports in a worker, not in the web process.
 - A single supplier. Several suppliers would need a `supplier_id` in the
   product key, in runs, and one lock per supplier.
 - No user authentication or record of who started an update.

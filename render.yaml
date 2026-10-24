@@ -1,0 +1,16 @@
+# Render Blueprint for the web demo. The MySQL database is hosted elsewhere
+# (Aiven free plan): its DSN and CA certificate are entered in the Render
+# dashboard when the Blueprint is created, never committed.
+services:
+  - type: web
+    name: supplier-catalog
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: CATALOG_DSN
+        sync: false
+      - key: CATALOG_DB_CA
+        sync: false

@@ -1,0 +1,9 @@
+.git
+.idea
+.vscode
+notes
+PLAN.md
+*.exe
+*.test
+*.out
+.env
