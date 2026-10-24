@@ -334,7 +334,7 @@ func TestSKUsAreCaseSensitive(t *testing.T) {
 	}
 }
 
-func TestLastBatchFinishesRunAndFreesSlot(t *testing.T) {
+func TestLastBatchFinishesRun(t *testing.T) {
 	s := storetest.New(t)
 	run := newRun(t, s)
 
@@ -353,16 +353,7 @@ func TestLastBatchFinishesRunAndFreesSlot(t *testing.T) {
 	if ps, _ := s.ListProducts(ctx, "", "B"); len(ps) != 0 {
 		t.Fatal("batch for a finished run was written")
 	}
-	newRun(t, s) // the slot is free again
-}
-
-// T9 at store level.
-func TestOnlyOneOpenRun(t *testing.T) {
-	s := storetest.New(t)
-	newRun(t, s)
-	if _, err := s.CreateRun(ctx); !errors.Is(err, store.ErrRunAlreadyOpen) {
-		t.Fatalf("second CreateRun error = %v, want ErrRunAlreadyOpen", err)
-	}
+	newRun(t, s) // a new run can be opened again
 }
 
 func TestSetStatusAndStaleRuns(t *testing.T) {

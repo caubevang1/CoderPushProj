@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS import_runs (
     id                BIGINT       NOT NULL AUTO_INCREMENT,
     status            VARCHAR(32)  NOT NULL,
     next_cursor       VARCHAR(255) NOT NULL DEFAULT '',
-    active_slot       TINYINT      NULL,
     batches_applied   INT          NOT NULL DEFAULT 0,
     skipped_stale     INT          NOT NULL DEFAULT 0,
     skipped_duplicate INT          NOT NULL DEFAULT 0,
@@ -15,8 +14,7 @@ CREATE TABLE IF NOT EXISTS import_runs (
     started_at        DATETIME(6)  NOT NULL,
     updated_at        DATETIME(6)  NOT NULL,
     finished_at       DATETIME(6)  NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY uq_import_runs_active (active_slot)
+    PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS products (

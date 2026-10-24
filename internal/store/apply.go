@@ -205,20 +205,17 @@ func changeKindOf(a catalog.Action, cur *catalog.Product, next catalog.Product) 
 
 // lockOpenRun locks the run row and checks the run may still take batches.
 func lockOpenRun(ctx context.Context, tx *sql.Tx, runID int64) error {
-	var (
-		status     RunStatus
-		activeSlot sql.NullInt16
-	)
+	var status RunStatus
 	err := tx.QueryRowContext(ctx,
-		`SELECT status, active_slot FROM import_runs WHERE id = ? FOR UPDATE`, runID).
-		Scan(&status, &activeSlot)
+		`SELECT status FROM import_runs WHERE id = ? FOR UPDATE`, runID).
+		Scan(&status)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("run %d: %w", runID, ErrRunNotFound)
 	}
 	if err != nil {
 		return wrap("lock run", err)
 	}
-	if !activeSlot.Valid || status != RunRunning {
+	if status != RunRunning {
 		return fmt.Errorf("run %d is %s, not running", runID, status)
 	}
 	return nil
@@ -358,7 +355,7 @@ func advanceRun(ctx context.Context, tx *sql.Tx, runID int64, b BatchInput, res 
 	}
 	_, err = tx.ExecContext(ctx, `
 		UPDATE import_runs
-		SET status = ?, active_slot = NULL, last_error = NULL, finished_at = ?, updated_at = ?
+		SET status = ?, last_error = NULL, finished_at = ?, updated_at = ?
 		WHERE id = ?`, status, t, t, runID)
 	if err != nil {
 		return "", wrap("finish run", err)

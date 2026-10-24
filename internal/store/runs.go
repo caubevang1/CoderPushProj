@@ -36,7 +36,7 @@ type Run struct {
 	ID               int64
 	Status           RunStatus
 	NextCursor       string // checkpoint: where the next fetch starts
-	Open             bool   // active_slot = 1
+	Open             bool   // !Status.Finished()
 	BatchesApplied   int
 	SkippedStale     int
 	SkippedDuplicate int
@@ -46,7 +46,7 @@ type Run struct {
 	FinishedAt       *time.Time
 }
 
-const runColumns = `id, status, next_cursor, active_slot, batches_applied, skipped_stale,
+const runColumns = `id, status, next_cursor, batches_applied, skipped_stale,
 	skipped_duplicate, last_error, started_at, updated_at, finished_at`
 
 type rowScanner interface {
@@ -56,16 +56,15 @@ type rowScanner interface {
 func scanRun(row rowScanner) (Run, error) {
 	var (
 		r          Run
-		activeSlot sql.NullInt16
 		lastError  sql.NullString
 		finishedAt sql.NullTime
 	)
-	err := row.Scan(&r.ID, &r.Status, &r.NextCursor, &activeSlot, &r.BatchesApplied,
+	err := row.Scan(&r.ID, &r.Status, &r.NextCursor, &r.BatchesApplied,
 		&r.SkippedStale, &r.SkippedDuplicate, &lastError, &r.StartedAt, &r.UpdatedAt, &finishedAt)
 	if err != nil {
 		return Run{}, err
 	}
-	r.Open = activeSlot.Valid
+	r.Open = !r.Status.Finished()
 	r.LastError = lastError.String
 	if finishedAt.Valid {
 		r.FinishedAt = &finishedAt.Time
@@ -73,16 +72,13 @@ func scanRun(row rowScanner) (Run, error) {
 	return r, nil
 }
 
-// CreateRun opens a new run. The UNIQUE key on active_slot makes MySQL
-// reject it with ErrRunAlreadyOpen while another run is open.
+// CreateRun opens a new run. Callers must hold the import lock and check
+// OpenRun first, so that at most one run is open.
 func (s *Store) CreateRun(ctx context.Context) (Run, error) {
 	t := now()
 	res, err := s.db.ExecContext(ctx, `
-		INSERT INTO import_runs (status, next_cursor, active_slot, started_at, updated_at)
-		VALUES (?, '', 1, ?, ?)`, RunRunning, t, t)
-	if isMySQLError(err, errDuplicateEntry) {
-		return Run{}, ErrRunAlreadyOpen
-	}
+		INSERT INTO import_runs (status, next_cursor, started_at, updated_at)
+		VALUES (?, '', ?, ?)`, RunRunning, t, t)
 	if err != nil {
 		return Run{}, wrap("create run", err)
 	}
@@ -96,7 +92,8 @@ func (s *Store) CreateRun(ctx context.Context) (Run, error) {
 // OpenRun returns the run that is still open, or ErrNoOpenRun.
 func (s *Store) OpenRun(ctx context.Context) (Run, error) {
 	r, err := scanRun(s.db.QueryRowContext(ctx,
-		`SELECT `+runColumns+` FROM import_runs WHERE active_slot = 1`))
+		`SELECT `+runColumns+` FROM import_runs WHERE status NOT IN (?, ?) ORDER BY id DESC LIMIT 1`,
+		RunCompleted, RunCompletedWithProblems))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Run{}, ErrNoOpenRun
 	}
@@ -162,15 +159,15 @@ func (s *Store) SetStatus(ctx context.Context, id int64, status RunStatus, lastE
 
 	// Checked with a locking read: RowsAffected would count only rows whose
 	// values changed, not rows that matched.
-	var activeSlot sql.NullInt16
-	err = tx.QueryRowContext(ctx, `SELECT active_slot FROM import_runs WHERE id = ? FOR UPDATE`, id).Scan(&activeSlot)
+	var current RunStatus
+	err = tx.QueryRowContext(ctx, `SELECT status FROM import_runs WHERE id = ? FOR UPDATE`, id).Scan(&current)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("set status of run %d: %w", id, ErrRunNotFound)
 	}
 	if err != nil {
 		return wrap("set status", err)
 	}
-	if !activeSlot.Valid {
+	if current.Finished() {
 		return fmt.Errorf("set status of run %d: run is already finished", id)
 	}
 

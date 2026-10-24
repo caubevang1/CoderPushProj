@@ -205,9 +205,9 @@ stateDiagram-v2
     completed_with_problems --> [*]
 ```
 
-`failed`, `interrupted` and `running` runs are *open*. A UNIQUE key on
-`import_runs.active_slot` (1 while open, NULL once finished) lets MySQL
-itself guarantee that only one run is open.
+`failed`, `interrupted` and `running` runs are *open*. At most one run is
+open: `start` checks for an open run while holding the import lock below,
+and refuses (pointing to `resume`) if there is one.
 
 Only one process may import at a time: it holds the MySQL named lock
 `GET_LOCK('catalog-import')` on a dedicated connection for the whole run.
