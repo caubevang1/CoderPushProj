@@ -6,6 +6,9 @@ services:
     name: supplier-catalog
     runtime: docker
     plan: free
+    # Same region as the database (Aiven do-sgp): every page runs several
+    # queries, and each one crossing the Pacific costs about 200 ms.
+    region: singapore
     dockerfilePath: ./Dockerfile
     healthCheckPath: /healthz
     autoDeploy: true
