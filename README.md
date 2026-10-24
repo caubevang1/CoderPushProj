@@ -12,10 +12,12 @@ Written in Go 1.27 with MySQL 8 (Docker). A fake supplier is included.
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
 - [CLI commands](#cli-commands)
+- [Demo video](#demo-video)
 - [Failure scenarios demo](#failure-scenarios-demo)
 - [Design](#design)
 - [Assumptions](#assumptions)
 - [Running the tests](#running-the-tests)
+- [Use of AI tools](#use-of-ai-tools)
 - [Not done yet / next steps](#not-done-yet--next-steps)
 
 ## Requirements
@@ -86,6 +88,14 @@ The fake supplier (`go run ./cmd/fakesupplier`) accepts:
 | `-fail-times K` | `0` (forever) | How many times `-fail-at` fails before recovering |
 | `-fail-rate P` | `0` | Probability of a random `503` on any request |
 | `-delay D` | `0` | Wait before each answer (e.g. `2s`), handy to press Ctrl+C mid-update |
+
+## Demo video
+
+Video (3–5 min): <link>
+
+The video follows the failure scenarios below: a first update, the
+supplier going down mid-update, resuming, importing the same data again,
+and recovering from a crash.
 
 ## Failure scenarios demo
 
@@ -321,6 +331,15 @@ What is covered:
 | Retry, no retry on 400, giving up, unsafe answers | `internal/supplier` |
 | Stale records, tombstones, reactivation, repeated batch, case-sensitive SKUs, transaction checks | `internal/store` |
 | First import, re-import, reverse batch order, supplier down at batch 1 or 3 then resume, Ctrl+C then resume, dead process detected, one run at a time, invalid records | `internal/importer` |
+
+## Use of AI tools
+
+- The business rules in `internal/catalog` (`Validate`, `Decide` and the
+  decision table) were written by hand.
+- Claude Code (Anthropic) helped plan the work and write the rest, phase
+  by phase: the MySQL store, the importer, the supplier client and fake
+  supplier, the CLI, the tests and this README.
+- The design decisions were mine. I reviewed, ran and tested every change.
 
 ## Not done yet / next steps
 
